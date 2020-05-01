@@ -3,7 +3,6 @@ def dockerImageRepo = 'mywebsiteanand/green_age'
 def dockerImageTag
 def dockerImage
 def dockerRegistry = 'hub.docker.com'
-def build_num 
 
 pipeline
 {
@@ -29,7 +28,7 @@ pipeline
         {
 
           dockerImageTag="$dockerImageRepo"+":"+"$BUILD_NUMBER"
-          build_num="$BUILD_NUMBER"
+          def build_num="$BUILD_NUMBER"
           echo "$build_num"
           echo "Created a Tag for uploading an Image to Registry based on Build_Number : $dockerImageTag"
 
@@ -72,7 +71,7 @@ pipeline
       {
         script
         {
-          sh '''ansible-playbook ansible_prod_deployment.yml -u centos --extra-vars "BUILD_NUMBER=${build_num}"'''
+          sh '''ansible-playbook ansible_prod_deployment.yml -u centos --extra-vars="number=$build_num"'''
         }
       }
     }
