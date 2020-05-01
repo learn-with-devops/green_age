@@ -27,7 +27,7 @@ pipeline
         script 
         {
 
-          dockerImageTag="$dockerImageRepo"
+          dockerImageTag="$dockerImageRepo"+":"+"$BUILD_NUMBER"
           echo "Created a Tag for uploading an Image to Registry based on Build_Number : $dockerImageTag"
 
         }
