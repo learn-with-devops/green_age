@@ -27,7 +27,7 @@ pipeline
         script 
         {
 
-          dockerImageTag="$dockerImageRepo"+":"+"$BUILD_NUMBER"
+          dockerImageTag="$dockerImageRepo"
           def build_num="$BUILD_NUMBER"
           echo "$build_num"
           echo "Created a Tag for uploading an Image to Registry based on Build_Number : $dockerImageTag"
@@ -71,7 +71,7 @@ pipeline
       {
         script
         {
-          sh '''ansible-playbook ansible_prod_deployment.yml -u centos --extra-vars="number=$build_num"'''
+          sh '''ansible-playbook ansible_prod_deployment.yml -u centos'''
         }
       }
     }
