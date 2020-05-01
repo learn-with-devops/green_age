@@ -72,7 +72,7 @@ pipeline
       {
         script
         {
-          sh 'ansible-playbook ansible_prod_deployment.yml -u centos --extra-vars=" BUILD_NUMBER=${}"'
+          sh '''ansible-playbook ansible_prod_deployment.yml -u centos --extra-vars="BUILD_NUMBER=$build_num"'''
         }
       }
     }
