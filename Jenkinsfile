@@ -70,10 +70,7 @@ pipeline {
         stage("Run job") {
             steps {
                 sh '''
-                    PATH=$PATH:~/helpers
-                    kubectl apply -f se-variants-machine-learning.yml
-                    sleep 10
-                    kubectl logs -f job.batch/se-variants-machine-learning
+                    cat se-variants-machine-learning.yml
                 '''
             }
         }
