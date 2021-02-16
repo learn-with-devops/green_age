@@ -1,79 +1,81 @@
-#!/groovy
-def dockerImageRepo = 'mywebsiteanand/green_age'
-def dockerImageTag
-def dockerImage
-def dockerRegistry = 'hub.docker.com'
+pipeline {
+    agent any
 
-pipeline
-{
-  agent any
-  stages
-  {
-    stage('Cleaning the WorkSpace')
-    {
-      steps
-      {
-        deleteDir()
-        echo "the build number is ${currentBuild.number}"
-        echo 'Cleanup Done'
-      }
+    options {
+        disableConcurrentBuilds()
+        timestamps()
     }
-    
-    stage('CheckOut latest Code')
-    {
-      steps
-      {
-        checkout scm
-        script 
-        {
 
-          dockerImageTag="$dockerImageRepo"
-          def build_num="$BUILD_NUMBER"
-          echo "$build_num"
-          echo "Created a Tag for uploading an Image to Registry based on Build_Number : $dockerImageTag"
-
+    stages {
+        stage('Delete existing job') {
+            steps {
+                sh '''
+                    PATH=$PATH:~/helpers
+                    if kubectl get jobs | grep 'se-variants-machine-learning'; then kubectl delete job se-variants-machine-learning; fi
+                    kubectl get jobs
+                '''
+            }
         }
-      }
-    }
-
-    stage('Build the Image')
-    {
-      steps
-      {
-        script 
-        {
-          echo 'Starting the Image Building'
-          dockerImage = docker.build "${dockerImageTag}"
-          sh 'docker images'
-          sh 'docker ps -a'
-          echo "$dockerImage"
+        stage("Create job template") {
+            steps {
+                sh '''
+                    cat <<EOF > se-variants-machine-learning.yml
+                    apiVersion: batch/v1
+                    kind: Job
+                    metadata:
+                      name: se-variants-machine-learning
+                      namespace: epam
+                    spec:
+                      ttlSecondsAfterFinished: 20
+                      template:
+                        metadata:
+                          labels:
+                            job-name: se-variants-machine-learning
+                        spec:
+                          containers:
+                          - args: ['--creds', '/opt/creds.json', '--ranges', "${RANGE_ID}"]
+                            command: ["python3", "/se_pv/main_pipeline_script.py"] 
+                            image: ${IMAGE_ID}
+                            imagePullPolicy: Always
+                            name: se-variants-machine-learning
+                            resources:
+                              requests:
+                                memory: "2048Mi"
+                                cpu: "1000m"
+                              limits:
+                                memory: "8192Mi"
+                                cpu: "2000m"
+                            securityContext:
+                              allowPrivilegeEscalation: false
+                              capabilities: {}
+                              privileged: false
+                              readOnlyRootFilesystem: false
+                              runAsNonRoot: false
+                            volumeMounts:
+                            - mountPath: /opt
+                              name: se-variants-ml-creds
+                          volumes:
+                          - configMap:
+                              defaultMode: 493
+                              name: se-ml-config
+                              optional: false
+                            name: se-variants-ml-creds
+                          imagePullSecrets:
+                          - name: se
+                          restartPolicy: Never
+                    EOF
+                '''.stripIndent()
+            }
         }
-      }
-    }
-
-    stage('Publish Docker Images to DockerHub')
-    {
-      steps
-      {
-        echo "Pushing Docker image to Registory"
-        script
-        {
-          sh 'docker login --username="anandgit71" --password="anandgit12" ${dockerRegistry}'
-          dockerImage.push()
-          // sh 'docker rmi $(docker images -a -q)'
-          // sh 'docker images'
+        stage("Run job") {
+            steps {
+                sh '''
+                    PATH=$PATH:~/helpers
+                    kubectl apply -f se-variants-machine-learning.yml
+                    sleep 10
+                    kubectl logs -f job.batch/se-variants-machine-learning
+                '''
+            }
         }
-      }
     }
-    stage('Production Deployment')
-    {
-      steps
-      {
-        script
-        {
-          sh '''ansible-playbook ansible_prod_deployment.yml -u centos'''
-        }
-      }
-    }
-  }
 }
