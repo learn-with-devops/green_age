@@ -10,9 +10,7 @@ pipeline {
         stage('Delete existing job') {
             steps {
                 sh '''
-                    PATH=$PATH:~/helpers
-                    if kubectl get jobs | grep 'se-variants-machine-learning'; then kubectl delete job se-variants-machine-learning; fi
-                    kubectl get jobs
+                    cat se-variants-machine-learning.yml
                 '''
             }
         }
