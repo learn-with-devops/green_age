@@ -7,13 +7,6 @@ pipeline {
     }
 
     stages {
-        stage('Delete existing job') {
-            steps {
-                sh '''
-                    cat se-variants-machine-learning.yml
-                '''
-            }
-        }
         stage("Create job template") {
             steps {
                 sh '''
